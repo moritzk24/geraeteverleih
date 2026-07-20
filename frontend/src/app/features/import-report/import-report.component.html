@@ -1,0 +1,74 @@
+<h2>Import-Bericht</h2>
+
+<table class="summary">
+  <thead>
+    <tr>
+      <th>Quelltabelle</th>
+      <th>Entscheidung</th>
+      <th>Anzahl</th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (row of summary(); track row.source_table + row.decision) {
+      <tr>
+        <td>{{ row.source_table }}</td>
+        <td>{{ row.decision }}</td>
+        <td>{{ row.count }}</td>
+      </tr>
+    }
+  </tbody>
+</table>
+
+<div class="filter-leiste">
+  <select [(ngModel)]="sourceTable" (ngModelChange)="suchen()">
+    <option value="">Alle Quelltabellen</option>
+    <option value="alt_inventar">alt_inventar</option>
+    <option value="alt_ausleihen">alt_ausleihen</option>
+  </select>
+
+  <select [(ngModel)]="decision" (ngModelChange)="suchen()">
+    <option value="">Alle Entscheidungen</option>
+    <option value="accepted">accepted</option>
+    <option value="accepted_with_caveat">accepted_with_caveat</option>
+    <option value="rejected">rejected</option>
+  </select>
+
+  <input
+    type="text"
+    placeholder="Inventarnummer"
+    [(ngModel)]="inventarnummer"
+    (ngModelChange)="suchen()"
+  />
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Quelle</th>
+      <th>Zeile</th>
+      <th>Entscheidung</th>
+      <th>Grund</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (e of entries(); track e.id) {
+      <tr>
+        <td>{{ e.source_table }}</td>
+        <td>{{ e.row_identifier }}</td>
+        <td>{{ e.decision }}</td>
+        <td>{{ e.reason }}</td>
+        <td><button (click)="toggleRohdaten(e)">Rohdaten</button></td>
+      </tr>
+      @if (aufgeklappt() === e.id) {
+        <tr>
+          <td colspan="5"><pre>{{ e.raw_data | json }}</pre></td>
+        </tr>
+      }
+    } @empty {
+      <tr>
+        <td colspan="5">Keine Einträge gefunden.</td>
+      </tr>
+    }
+  </tbody>
+</table>

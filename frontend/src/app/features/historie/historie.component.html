@@ -1,0 +1,53 @@
+<h2>Historie</h2>
+
+<div class="filter-leiste">
+  <select [(ngModel)]="geraetId" (ngModelChange)="suchen()">
+    <option [ngValue]="null">Alle Geräte</option>
+    @for (g of geraete(); track g.id) {
+      <option [ngValue]="g.id">{{ g.bezeichnung }} ({{ g.inventarnummer }})</option>
+    }
+  </select>
+
+  <input
+    type="text"
+    placeholder="Person"
+    [(ngModel)]="person"
+    (ngModelChange)="suchen()"
+  />
+
+  <label>
+    <input type="checkbox" [(ngModel)]="nurOffene" (ngModelChange)="suchen()" />
+    nur offene
+  </label>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Gerät</th>
+      <th>Person</th>
+      <th>Ausgeliehen am</th>
+      <th>Zurückgegeben am</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (a of ausleihen(); track a.id) {
+      <tr>
+        <td>{{ a.bezeichnung }} ({{ a.inventarnummer }})</td>
+        <td>{{ a.ausgeliehen_von }}</td>
+        <td>{{ a.ausgeliehen_am }}</td>
+        <td>{{ a.zurueckgegeben_am ?? 'offen' }}</td>
+        <td>
+          @if (!a.zurueckgegeben_am) {
+            <button (click)="zurueckgeben(a)">Zurückgeben</button>
+          }
+        </td>
+      </tr>
+    } @empty {
+      <tr>
+        <td colspan="5">Keine Ausleihen gefunden.</td>
+      </tr>
+    }
+  </tbody>
+</table>

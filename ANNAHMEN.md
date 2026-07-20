@@ -46,3 +46,28 @@ Der Import ist als **Wipe-and-Reload** umgesetzt: jeder Lauf leert `ausleihen`, 
 | `zurueckgegeben_am` liegt vor `ausgeliehen_am` (z. B. `IT-006`) | **rejected** | Rückgabedatum liegt vor Ausleihdatum |
 
 **Begründung Rückgabedatum-vor-Ausleihdatum:** Es ist nicht entscheidbar, ob Ausleih- und Rückgabedatum vertauscht wurden, ob eines der beiden Daten schlicht falsch eingetragen wurde, oder ob es sich um zwei unabhängige Fehler handelt. Statt zu raten (z. B. Daten tauschen oder Rückgabedatum verwerfen und als offen behandeln), wird die Zeile komplett abgelehnt und im Report sichtbar gemacht — nachvollziehbar und ohne stille Korrektur einer nicht verifizierbaren Annahme.
+
+## Teil 2 – Verleih (Kern)
+
+### Definition „verfügbar"
+
+`geraete.menge` ist die Stückzahl eines Inventarnummer-Eintrags (z. B. 5× dasselbe Werkzeug unter einer Inventarnummer). Verfügbarkeit wird daher als Stückzahl-Rechnung definiert, nicht als einfaches Ja/Nein pro Gerät:
+
+```
+verfuegbare_menge = geraete.menge − Anzahl offener Ausleihen (zurueckgegeben_am IS NULL) für dieses Gerät
+verfuegbar = verfuegbare_menge > 0
+```
+
+Eine Ausleihe wird nur angelegt, wenn `verfuegbare_menge > 0` zum Zeitpunkt der Anfrage gilt; sonst Ablehnung mit `409` und lesbarem Grund (z. B. „Kein Exemplar verfügbar (0 von 3 verfügbar)"). Überfällige offene Ausleihen zählen hier genauso wie pünktliche als „offen" — die Unterscheidung überfällig/pünktlich ändert nichts an der Verfügbarkeitsdefinition (kommt in Teil 3 als eigene Ansicht hinzu, nicht als Verschärfung dieser Regel).
+
+### Datumsfelder bei Ausleihe/Rückgabe
+
+`ausgeliehen_am` und `zurueckgegeben_am` werden serverseitig auf das aktuelle Datum gesetzt, nicht vom Client übergeben. Das verhindert unplausible/manipulierte Datumsangaben und ist für den Praxisumfang ausreichend; eine nachträgliche Korrektur (z. B. rückwirkende Erfassung durch eine Admin-Rolle) ist nicht vorgesehen.
+
+### Personen als Freitext
+
+Es gibt (bewusst) keine eigene Personen-Tabelle — `ausgeliehen_von` bleibt ein Freitextfeld wie in den Altdaten. Die Historie-Filterung nach Person ist daher eine case-insensitive Teilstring-Suche, keine exakte Identität; unterschiedliche Schreibweisen derselben Person werden nicht zusammengeführt. Für Teil 5 (Auswertung „wer hat die meisten Geräte") gilt dieselbe Einschränkung.
+
+### Kein Ausmusterungs-Status
+
+Ein „ausgemustert"-Flag existiert noch nicht (kommt erst in Teil 5). Alle Geräte aus dem sauberen Bestand sind aktuell grundsätzlich ausleihbar, solange `verfuegbare_menge > 0`.

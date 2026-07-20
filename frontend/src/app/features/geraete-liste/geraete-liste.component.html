@@ -1,0 +1,70 @@
+<h2>Geräte</h2>
+
+<div class="filter-leiste">
+  <input
+    type="text"
+    placeholder="Suche (Bezeichnung, Inventarnummer)"
+    [(ngModel)]="search"
+    (ngModelChange)="ladeGeraete()"
+  />
+
+  <select [(ngModel)]="kategorie" (ngModelChange)="ladeGeraete()">
+    <option value="">Alle Kategorien</option>
+    @for (k of kategorien(); track k) {
+      <option [value]="k">{{ k }}</option>
+    }
+  </select>
+
+  <label>
+    <input type="checkbox" [(ngModel)]="nurVerfuegbare" (ngModelChange)="ladeGeraete()" />
+    nur verfügbare
+  </label>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Inventarnummer</th>
+      <th>Bezeichnung</th>
+      <th>Kategorie</th>
+      <th>Verfügbar</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (g of geraete(); track g.id) {
+      <tr>
+        <td>{{ g.inventarnummer }}</td>
+        <td>{{ g.bezeichnung }}</td>
+        <td>{{ g.kategorie }}</td>
+        <td>{{ g.verfuegbare_menge }} / {{ g.menge }}</td>
+        <td>
+          <button [disabled]="!g.verfuegbar" (click)="ausleiheStarten(g)">Ausleihen</button>
+        </td>
+      </tr>
+    } @empty {
+      <tr>
+        <td colspan="5">Keine Geräte gefunden.</td>
+      </tr>
+    }
+  </tbody>
+</table>
+
+@if (ausleiheGeraet(); as geraet) {
+  <div class="dialog-hintergrund">
+    <div class="dialog">
+      <h3>{{ geraet.bezeichnung }} ausleihen</h3>
+      <label>
+        Name
+        <input type="text" [(ngModel)]="ausgeliehenVon" placeholder="Ausgeliehen von" />
+      </label>
+      @if (fehler(); as f) {
+        <p class="fehler">{{ f }}</p>
+      }
+      <div class="dialog-aktionen">
+        <button (click)="ausleiheAbbrechen()">Abbrechen</button>
+        <button [disabled]="!ausgeliehenVon.trim()" (click)="ausleiheBestaetigen()">Bestätigen</button>
+      </div>
+    </div>
+  </div>
+}
