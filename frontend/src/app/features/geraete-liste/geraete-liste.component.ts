@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AusleihenService } from '../../core/ausleihen.service';
 import { Geraet } from '../../core/geraet.model';
 import { GeraeteService } from '../../core/geraete.service';
+import { extractErrorMessage } from '../../core/http-error';
 import { Reservierung } from '../../core/reservierung.model';
 import { ReservierungenService } from '../../core/reservierungen.service';
 
@@ -77,7 +78,7 @@ export class GeraeteListeComponent {
         this.erfolgFaelligAm.set(ausleihe.faellig_am);
       },
       error: (err) => {
-        this.fehler.set(err?.error?.detail ?? 'Ausleihe fehlgeschlagen');
+        this.fehler.set(extractErrorMessage(err, 'Ausleihe fehlgeschlagen'));
       },
     });
   }
@@ -116,7 +117,7 @@ export class GeraeteListeComponent {
           this.reservierungErfolg.set(reservierung);
         },
         error: (err) => {
-          this.reservierungFehler.set(err?.error?.detail ?? 'Reservierung fehlgeschlagen');
+          this.reservierungFehler.set(extractErrorMessage(err, 'Reservierung fehlgeschlagen'));
         },
       });
   }
