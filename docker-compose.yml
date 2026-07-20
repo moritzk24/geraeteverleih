@@ -19,7 +19,7 @@ services:
   backend:
     build: ./backend
     environment:
-      DATABASE_URL: postgresql+psycopg2://geraeteverleih:geraeteverleih@postgres:5432/geraeteverleih
+      DATABASE_URL: postgresql+psycopg://geraeteverleih:geraeteverleih@postgres:5432/geraeteverleih
     ports:
       - "8000:8000"
     depends_on:
