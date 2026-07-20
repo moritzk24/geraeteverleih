@@ -60,6 +60,8 @@ verfuegbar = verfuegbare_menge > 0
 
 Eine Ausleihe wird nur angelegt, wenn `verfuegbare_menge > 0` zum Zeitpunkt der Anfrage gilt; sonst Ablehnung mit `409` und lesbarem Grund (z. B. „Kein Exemplar verfügbar (0 von 3 verfügbar)"). Überfällige offene Ausleihen zählen hier genauso wie pünktliche als „offen" — die Unterscheidung überfällig/pünktlich ändert nichts an der Verfügbarkeitsdefinition (kommt in Teil 3 als eigene Ansicht hinzu, nicht als Verschärfung dieser Regel).
 
+> ⚠️ **Bekanntes Problem — negative Verfügbarkeit (TODO, noch nicht behoben):** Die importierte Ausleihhistorie enthält Fälle, in denen mehr offene Ausleihen für ein Gerät existieren als `menge` zulässt (z. B. **Canon EOS R6, `IT-009`**: `menge = 1`, aber 2 offene Ausleihen → `verfuegbare_menge = -1`). Das Altsystem hat Verfügbarkeit offenbar nie durchgesetzt. Die aktuelle Formel lässt das zu (negativer Wert, `verfuegbar = false`, neue Ausleihen bleiben blockiert) — sie **korrigiert die Altdaten aber nicht** und die UI erklärt das negative Verhältnis nicht. Muss vor Produktivsetzung entschieden werden: Datenkorrektur beim Import (z. B. überzählige offene Ausleihen im Report markieren/zusammenführen), Anzeige-Klarstellung in der UI, oder explizit als akzeptierter Altlast-Zustand dokumentieren. Nicht vergessen, bevor Teil 3/4 (Fristen, Reservierungen) darauf aufbauen.
+
 ### Datumsfelder bei Ausleihe/Rückgabe
 
 `ausgeliehen_am` und `zurueckgegeben_am` werden serverseitig auf das aktuelle Datum gesetzt, nicht vom Client übergeben. Das verhindert unplausible/manipulierte Datumsangaben und ist für den Praxisumfang ausreichend; eine nachträgliche Korrektur (z. B. rückwirkende Erfassung durch eine Admin-Rolle) ist nicht vorgesehen.

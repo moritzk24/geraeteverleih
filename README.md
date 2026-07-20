@@ -2,6 +2,10 @@
 
 Ersatz für die bisherige Excel-Verleihliste eines internen Geräteverleihs. Umsetzung erfolgt schrittweise entlang der Teile aus `AUFGABE.md`; aktuell sind **Teil 1 (Datenübernahme)** und **Teil 2 (Verleih)** umgesetzt.
 
+## ⚠️ Bekanntes Problem (offen, noch zu klären)
+
+Das Canon-EOS-R6-Gerät (`IT-009`) zeigt aktuell `verfuegbare_menge = -1` (2 offene Ausleihen bei `menge = 1`) — das Altsystem hat Verfügbarkeit nie durchgesetzt. Die Verfügbarkeitsformel toleriert das rechnerisch (negativ, `verfuegbar = false`), aber die Altdaten sind dadurch nicht bereinigt und die UI erklärt den negativen Wert nicht. **Muss vor Produktivsetzung entschieden werden**, siehe [ANNAHMEN.md](ANNAHMEN.md#teil-2--verleih-kern).
+
 ## Tech-Stack
 
 - **Datenbank:** PostgreSQL (per Docker Compose)
