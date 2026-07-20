@@ -135,3 +135,17 @@ Abholung ist für jede aktive Reservierung jederzeit möglich, auch außerhalb v
 ### Reservierung muss in der Zukunft liegen
 
 `start_datum >= heute` (heute selbst ist zulässig) und `end_datum >= start_datum`, sonst 422. Es gibt keine Admin-Möglichkeit, rückwirkend zu reservieren.
+
+### Mehrere überlappende Reservierungen desselben Geräts sind normal, keine Sonderregel pro Person
+
+Bei Geräten mit `menge > 1` können mehrere *verschiedene* Reservierungen für denselben Zeitraum aktiv sein, solange die Kapazitätsformel weiterhin `> 0` ergibt — das ist die beabsichtigte Funktionsweise der Verfügbarkeitsprüfung, kein Fehler. Es gibt außerdem **keine Sperre, die dieselbe Person daran hindert, für dasselbe Gerät im selben Zeitraum mehrere Einheiten zu reservieren** (z. B. zwei überlappende Reservierungen unter demselben Namen).
+
+**Begründung:** `reserviert_von` ist Freitext ohne Identitätsprüfung (s. Teil 2, „Personen als Freitext"). Eine „eine aktive Reservierung pro Person und Gerät"-Regel wäre nur so gut wie der Namensabgleich — schon geringfügig unterschiedliche Schreibweisen (Groß-/Kleinschreibung, Leerzeichen, Kurzform) würden als unterschiedliche Personen behandelt und die Regel unbemerkt umgehen, während ein Nutzer, der seinen Namen konsequent gleich schreibt, unnötig eingeschränkt würde. Zudem ist Mehrfachbedarf ein legitimer Anwendungsfall (z. B. eine Person bucht mehrere Geräte desselben Typs für ein Team-Event). Die einzige Garantie, die das System sinnvoll durchsetzen kann und durchsetzt, ist die Gesamtkapazität (`menge`) über alle Reservierungen und offenen Ausleihen hinweg — wer im Rahmen dieser Kapazität wie viele Einheiten auf sich vereint, ist eine organisatorische Frage der Büroleitung, keine Dateningtegritätsfrage. Es gibt bewusst auch keinen Warnhinweis dazu in der Oberfläche.
+
+### Keine Änderung bestehender Reservierungen
+
+Es gibt keinen Endpunkt, um Datum oder Person einer bestehenden Reservierung zu ändern — nur Anlegen, Stornieren und Abholen. Eine Terminverschiebung erfordert Stornieren + Neuanlegen. Für den Praxisumfang ausreichend; „Bearbeiten" wäre ein sinnvoller Ausbau, falls Zeit bleibt.
+
+### Keine Sperre gegen gleichzeitige Anfragen (Race Condition)
+
+Die Verfügbarkeitsprüfung liest die aktuelle Kapazität (offene Ausleihen + überlappende Reservierungen) und legt danach in einem separaten Schritt die neue Reservierung an, ohne Datenbank-seitige Sperre dazwischen. Zwei nahezu zeitgleiche Anfragen für die letzte freie Einheit eines Geräts könnten daher beide die Prüfung bestehen und das Gerät kurzzeitig überbuchen. Bei den zu erwartenden Nutzungszahlen (kleines Team, keine hochfrequenten parallelen Buchungen) ist das Risiko gering; für den Praxisumfang nicht behoben (würde `SELECT ... FOR UPDATE` oder eine DB-Constraint auf Belegungs-Ebene erfordern), aber bewusst dokumentiert statt stillschweigend in Kauf genommen.
