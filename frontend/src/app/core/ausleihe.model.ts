@@ -5,7 +5,9 @@ export interface Ausleihe {
   bezeichnung: string;
   ausgeliehen_von: string;
   ausgeliehen_am: string;
+  faellig_am: string;
   zurueckgegeben_am: string | null;
+  ueberfaellig: boolean;
 }
 
 export interface AusleiheCreate {

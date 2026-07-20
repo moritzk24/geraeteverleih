@@ -73,3 +73,29 @@ Es gibt (bewusst) keine eigene Personen-Tabelle — `ausgeliehen_von` bleibt ein
 ### Kein Ausmusterungs-Status
 
 Ein „ausgemustert"-Flag existiert noch nicht (kommt erst in Teil 5). Alle Geräte aus dem sauberen Bestand sind aktuell grundsätzlich ausleihbar, solange `verfuegbare_menge > 0`.
+
+## Teil 3 – Leihfristen und Überfälligkeit
+
+### Konfigurationstabelle `leihfristen`
+
+Eine Zeile pro Kategorie (`kategorie`, `frist_tage`); eine Zeile mit `kategorie = NULL` ist die Fallback-/Standardfrist. Seed: `NULL → 14`, `Kamera → 7`, `Präsentation → 7`, `Mobilgerät → 30`. Kategorien ohne eigenen Eintrag (z. B. `Sonstige` oder künftige, in Teil 5 neu angelegte Kategorien) fallen auf die `NULL`-Zeile zurück. Es gibt bewusst keinen Lösch-Endpoint, nur Upsert (`PUT /api/leihfristen/{kategorie}`, Pfadsegment `default` für die Fallback-Zeile) — so kann die Fallback-Zeile nicht versehentlich verschwinden.
+
+### `faellig_am` wird bei Anlage fixiert, nicht live berechnet
+
+`ausleihen.faellig_am` wird beim Anlegen der Ausleihe einmalig aus `ausgeliehen_am + Frist(Gerätekategorie)` berechnet und persistiert (nicht bei jeder Anfrage neu aus der aktuellen Konfiguration abgeleitet).
+
+**Begründung:** Ändert ein Admin später die Frist für eine Kategorie, soll sich das Fälligkeitsdatum bereits laufender, ausgehändigter Ausleihen nicht rückwirkend ändern — die dem Ausleiher kommunizierte Frist gilt so, wie sie bei Übergabe berechnet wurde. Neue Ausleihen verwenden automatisch die dann aktuelle Konfiguration.
+
+Für die einmalige Ersteinrichtung (Migration `0002`) wurde `faellig_am` für alle bereits importierten Alt-Ausleihen anhand der zu diesem Zeitpunkt gültigen Konfiguration nachträglich berechnet (Backfill); ein erneuter ETL-Lauf berechnet `faellig_am` beim Laden ebenfalls neu und bleibt damit konsistent mit der aktuellen Konfiguration zum Import-Zeitpunkt.
+
+### Definition „überfällig"
+
+```
+ueberfaellig = zurueckgegeben_am IS NULL AND faellig_am < heute
+```
+
+Nur offene Ausleihen können überfällig sein. Eine verspätet zurückgegebene Ausleihe gilt nach Rückgabe nicht mehr als überfällig — das ist reine Historie (aus `ausgeliehen_am`/`zurueckgegeben_am` weiterhin ablesbar), aber keine aktuelle Überfälligkeit mehr.
+
+### Keine Admin-UI für Leihfristen
+
+Die Fristen sind über die API konfigurierbar (`GET`/`PUT /api/leihfristen`), aber es gibt in Teil 3 noch keine eigene Oberfläche zum Bearbeiten — Zeitbudget. Nur Backend-Tabelle + API; eine UI dafür wäre ein sinnvoller Ausbau in Teil 5 (Geräteverwaltung), falls Zeit bleibt.

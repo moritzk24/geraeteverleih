@@ -70,6 +70,10 @@ td {
   color: #b00020;
 }
 
+.erfolg {
+  color: #1a7431;
+}
+
 table.summary {
   max-width: 500px;
 }

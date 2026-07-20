@@ -1,0 +1,30 @@
+<h2>Überfällige Ausleihen</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Gerät</th>
+      <th>Person</th>
+      <th>Ausgeliehen am</th>
+      <th>Fällig am</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (a of ausleihen(); track a.id) {
+      <tr>
+        <td>{{ a.bezeichnung }} ({{ a.inventarnummer }})</td>
+        <td>{{ a.ausgeliehen_von }}</td>
+        <td>{{ a.ausgeliehen_am }}</td>
+        <td>{{ a.faellig_am }}</td>
+        <td>
+          <button (click)="zurueckgeben(a)">Zurückgeben</button>
+        </td>
+      </tr>
+    } @empty {
+      <tr>
+        <td colspan="5">Keine überfälligen Ausleihen.</td>
+      </tr>
+    }
+  </tbody>
+</table>

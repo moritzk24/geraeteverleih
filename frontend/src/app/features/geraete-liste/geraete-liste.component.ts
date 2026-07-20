@@ -25,6 +25,7 @@ export class GeraeteListeComponent {
   readonly ausleiheGeraet = signal<Geraet | null>(null);
   ausgeliehenVon = '';
   readonly fehler = signal<string | null>(null);
+  readonly erfolgFaelligAm = signal<string | null>(null);
 
   constructor() {
     this.geraeteService.kategorien().subscribe((kategorien) => this.kategorien.set(kategorien));
@@ -41,11 +42,14 @@ export class GeraeteListeComponent {
     this.ausleiheGeraet.set(geraet);
     this.ausgeliehenVon = '';
     this.fehler.set(null);
+    this.erfolgFaelligAm.set(null);
   }
 
   ausleiheAbbrechen(): void {
     this.ausleiheGeraet.set(null);
     this.fehler.set(null);
+    this.erfolgFaelligAm.set(null);
+    this.ladeGeraete();
   }
 
   ausleiheBestaetigen(): void {
@@ -54,9 +58,9 @@ export class GeraeteListeComponent {
       return;
     }
     this.ausleihenService.ausleihen({ geraet_id: geraet.id, ausgeliehen_von: this.ausgeliehenVon }).subscribe({
-      next: () => {
-        this.ausleiheGeraet.set(null);
-        this.ladeGeraete();
+      next: (ausleihe) => {
+        this.fehler.set(null);
+        this.erfolgFaelligAm.set(ausleihe.faellig_am);
       },
       error: (err) => {
         this.fehler.set(err?.error?.detail ?? 'Ausleihe fehlgeschlagen');

@@ -47,8 +47,8 @@ def run_import(db: Session) -> dict[str, Any]:
     ]
 
     wipe_clean_tables(db)
-    inventarnummer_to_id = load_geraete(db, inventar_decisions)
-    load_ausleihen(db, ausleihen_decisions, inventarnummer_to_id)
+    inventarnummer_to_geraet = load_geraete(db, inventar_decisions)
+    load_ausleihen(db, ausleihen_decisions, inventarnummer_to_geraet)
 
     persist_report(db, "alt_inventar", inventar_raw, inventar_decisions, _inventar_identifier)
     persist_report(db, "alt_ausleihen", ausleihen_raw, ausleihen_decisions, _ausleihe_identifier)

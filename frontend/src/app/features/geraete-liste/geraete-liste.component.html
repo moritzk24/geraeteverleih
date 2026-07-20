@@ -54,17 +54,24 @@
   <div class="dialog-hintergrund">
     <div class="dialog">
       <h3>{{ geraet.bezeichnung }} ausleihen</h3>
-      <label>
-        Name
-        <input type="text" [(ngModel)]="ausgeliehenVon" placeholder="Ausgeliehen von" />
-      </label>
-      @if (fehler(); as f) {
-        <p class="fehler">{{ f }}</p>
+      @if (erfolgFaelligAm(); as faelligAm) {
+        <p class="erfolg">Ausgeliehen — fällig am {{ faelligAm }}.</p>
+        <div class="dialog-aktionen">
+          <button (click)="ausleiheAbbrechen()">Schließen</button>
+        </div>
+      } @else {
+        <label>
+          Name
+          <input type="text" [(ngModel)]="ausgeliehenVon" placeholder="Ausgeliehen von" />
+        </label>
+        @if (fehler(); as f) {
+          <p class="fehler">{{ f }}</p>
+        }
+        <div class="dialog-aktionen">
+          <button (click)="ausleiheAbbrechen()">Abbrechen</button>
+          <button [disabled]="!ausgeliehenVon.trim()" (click)="ausleiheBestaetigen()">Bestätigen</button>
+        </div>
       }
-      <div class="dialog-aktionen">
-        <button (click)="ausleiheAbbrechen()">Abbrechen</button>
-        <button [disabled]="!ausgeliehenVon.trim()" (click)="ausleiheBestaetigen()">Bestätigen</button>
-      </div>
     </div>
   </div>
 }

@@ -9,6 +9,7 @@ from app.models.ausleihe import Ausleihe
 from app.models.geraet import Geraet
 from app.schemas.ausleihe import AusleiheCreate, AusleiheOut
 from app.services.availability import verfuegbare_menge
+from app.services.leihfristen import ermittle_faellig_am, ist_ueberfaellig
 
 router = APIRouter(prefix="/api/ausleihen", tags=["ausleihen"])
 
@@ -21,7 +22,9 @@ def build_ausleihe_out(ausleihe: Ausleihe, geraet: Geraet) -> AusleiheOut:
         bezeichnung=geraet.bezeichnung,
         ausgeliehen_von=ausleihe.ausgeliehen_von,
         ausgeliehen_am=ausleihe.ausgeliehen_am,
+        faellig_am=ausleihe.faellig_am,
         zurueckgegeben_am=ausleihe.zurueckgegeben_am,
+        ueberfaellig=ist_ueberfaellig(ausleihe.faellig_am, ausleihe.zurueckgegeben_am),
     )
 
 
@@ -30,6 +33,7 @@ def list_ausleihen_query(
     geraet_id: int | None,
     person: str | None,
     offen: bool | None,
+    ueberfaellig: bool | None = None,
 ) -> list[tuple[Ausleihe, Geraet]]:
     stmt = select(Ausleihe, Geraet).join(Geraet, Ausleihe.geraet_id == Geraet.id)
     if geraet_id is not None:
@@ -41,6 +45,8 @@ def list_ausleihen_query(
             stmt = stmt.where(Ausleihe.zurueckgegeben_am.is_(None))
         else:
             stmt = stmt.where(Ausleihe.zurueckgegeben_am.is_not(None))
+    if ueberfaellig:
+        stmt = stmt.where(Ausleihe.zurueckgegeben_am.is_(None), Ausleihe.faellig_am < date.today())
     stmt = stmt.order_by(Ausleihe.ausgeliehen_am.desc())
     return [(a, g) for a, g in db.execute(stmt).all()]
 
@@ -50,9 +56,10 @@ def list_ausleihen(
     geraet_id: int | None = Query(default=None),
     person: str | None = Query(default=None),
     offen: bool | None = Query(default=None),
+    ueberfaellig: bool | None = Query(default=None),
     db: Session = Depends(get_db),
 ) -> list[AusleiheOut]:
-    rows = list_ausleihen_query(db, geraet_id=geraet_id, person=person, offen=offen)
+    rows = list_ausleihen_query(db, geraet_id=geraet_id, person=person, offen=offen, ueberfaellig=ueberfaellig)
     return [build_ausleihe_out(a, g) for a, g in rows]
 
 
@@ -69,10 +76,12 @@ def create_ausleihe(payload: AusleiheCreate, db: Session = Depends(get_db)) -> A
             detail=f"Kein Exemplar verfügbar (0 von {geraet.menge} verfügbar)",
         )
 
+    ausgeliehen_am = date.today()
     ausleihe = Ausleihe(
         geraet_id=geraet.id,
         ausgeliehen_von=payload.ausgeliehen_von,
-        ausgeliehen_am=date.today(),
+        ausgeliehen_am=ausgeliehen_am,
+        faellig_am=ermittle_faellig_am(db, geraet.kategorie, ausgeliehen_am),
         zurueckgegeben_am=None,
     )
     db.add(ausleihe)

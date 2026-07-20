@@ -25,4 +25,6 @@ class AusleiheOut(BaseModel):
     bezeichnung: str
     ausgeliehen_von: str
     ausgeliehen_am: date
+    faellig_am: date
     zurueckgegeben_am: date | None
+    ueberfaellig: bool

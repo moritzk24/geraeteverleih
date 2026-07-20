@@ -9,6 +9,7 @@ export interface AusleihenFilter {
   person?: string;
   geraetId?: number;
   offen?: boolean;
+  ueberfaellig?: boolean;
 }
 
 @Injectable({
@@ -27,6 +28,9 @@ export class AusleihenService {
     }
     if (filter.offen != null) {
       params = params.set('offen', String(filter.offen));
+    }
+    if (filter.ueberfaellig != null) {
+      params = params.set('ueberfaellig', String(filter.ueberfaellig));
     }
     return this.http.get<Ausleihe[]>(`${API_BASE}/ausleihen`, { params });
   }
