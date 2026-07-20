@@ -186,3 +186,32 @@ Ausgemusterte Geräte fließen weder in `kapazitaet` noch in `gebunden` ein (gle
 ### Auswertungen: nur die drei in der Aufgabenstellung genannten Beispiele
 
 `GET /api/stats/top-personen` (meiste aktuell offene Ausleihen), `GET /api/stats/top-geraete` (häufigste Ausleihen, alle Zeit) und `GET /api/stats/auslastung`. Keine zusätzlichen Kennzahlen gebaut — Zeitbudget, „kleine Ansicht" laut Aufgabenstellung. Die „wer hat die meisten Geräte"-Auswertung erbt die bekannte Einschränkung aus Teil 2 (`ausgeliehen_von` ist Freitext, keine Identitätsauflösung).
+
+## Teil 6 – Zusammenfassung: Datenauffälligkeiten & Entscheidungen
+
+Kurzfassung der oben ausführlich dokumentierten Punkte, als Grundlage für `TEIL6.md`.
+
+### Datenqualität (Rohdaten)
+
+1. **Doppelte Inventarnummer** (`IT-005`: iPhone *und* iPad) → erste Zeile kanonisch übernommen, zweite abgelehnt. Begründung: nicht rekonstruierbar, welches Gerät gemeint war — keine Fakten erfinden (z. B. neue Inventarnummer vergeben).
+2. **Fehlende Pflichtfelder** (leere `bezeichnung`, `kategorie`) → mit Platzhalter/Fallback akzeptiert, nicht abgelehnt, aber als Caveat markiert. Begründung: Datensatz bleibt nutzbar, Unsicherheit bleibt sichtbar.
+3. **Inkonsistente Datumsformate** (`DD.MM.YYYY` vs. ISO) → normalisiert, mit Caveat.
+4. **Rückgabedatum vor Ausleihdatum** (`IT-006`) → komplett abgelehnt. Begründung: nicht entscheidbar, ob vertauscht oder falsch — lieber sichtbar ablehnen als stillschweigend raten.
+5. **Zukünftiges Anschaffungsdatum** (`IT-032`), **Menge = 0** (`IT-023`) → akzeptiert mit Caveat, Wert unverändert übernommen.
+6. **Negative Verfügbarkeit im Altsystem** (`IT-009`, Canon EOS R6: `menge=1`, aber 2 offene Ausleihen) → zeigt, dass das Altsystem Verfügbarkeit nie durchgesetzt hat. Aktuell dokumentiertes offenes TODO, nicht korrigiert.
+
+### Geschäftsregel-Entscheidungen (Spezifikationslücken, nicht aus Daten)
+
+- Verfügbarkeit = Stückzahl-Rechnung (`menge − offene Ausleihen`), nicht Ja/Nein.
+- Reservierungen: offene Ausleihen blockieren jede künftige Reservierung, unabhängig von `faellig_am` — konservativ, weil Rückgabedatum vorab unbekannt ist.
+- Berührende Reservierungsintervalle gelten als Überlappung (kein Uhrzeit-Tracking).
+- `faellig_am` wird bei Anlage fixiert (nicht live neu berechnet) — Frist-Änderungen wirken nicht rückwirkend.
+- Personen sind Freitext ohne Identitätsauflösung — Auswertungen (Teil 5) erben diese Einschränkung.
+- Auslastung zählt nur Reservierungen, die den heutigen Tag überlappen; Grenzwerte 40 %/80 % auf „mittel"-Seite geschlossen.
+- Keine DB-seitige Sperre gegen gleichzeitige Reservierungsanfragen (Race Condition) — bewusst dokumentiertes Restrisiko statt stillschweigend in Kauf genommen.
+
+## Drei Fragen an die Büroleitung vor Go-Live
+
+1. **Personenidentität:** Reicht ein Freitextfeld für „wer leiht aus", oder gibt es eine feste Mitarbeiterliste, gegen die validiert werden sollte? Ohne das werden Tippfehler und Namensvarianten nie zusammengeführt — das verzerrt auch Auswertungen wie „meistausleihende Person".
+2. **Rollen/Rechte:** Sollen alle Mitarbeiter dieselben Rechte haben, oder braucht es eine Admin-Rolle für kritische Aktionen (Geräte ausmustern, Leihfristen ändern, Mengen reduzieren)? Aktuell gibt es keine Authentifizierung oder Rechtetrennung.
+3. **Nutzerzahl/Gleichzeitigkeit:** Wie viele Personen nutzen das System etwa gleichzeitig, und wie oft kommt es vor, dass zwei Leute fast zeitgleich dasselbe knappe Gerät buchen wollen? Die aktuelle Verfügbarkeitsprüfung hat keine Datenbank-Sperre gegen echte Race Conditions — bei kleinem Team und seltenen parallelen Buchungen ist das Risiko gering, bei mehr Gleichzeitigkeit wäre das nachzurüsten.
