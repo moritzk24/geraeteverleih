@@ -1,6 +1,6 @@
 # Geräteverleih
 
-Ersatz für die bisherige Excel-Verleihliste eines internen Geräteverleihs. Umsetzung erfolgt schrittweise entlang der Teile aus `AUFGABE.md`; aktuell sind **Teil 1 (Datenübernahme)** und **Teil 2 (Verleih)** umgesetzt.
+Ersatz für die bisherige Excel-Verleihliste eines internen Geräteverleihs. Umsetzung erfolgt schrittweise entlang der Teile aus `AUFGABE.md`; aktuell sind **Teil 1–5** umgesetzt.
 
 ## ⚠️ Bekanntes Problem (offen, noch zu klären)
 
@@ -47,6 +47,25 @@ Die API läuft danach auf `http://localhost:8000` (Swagger-UI unter `/docs`). Po
 - `POST /api/ausleihen` `{geraet_id, ausgeliehen_von}` — Ausleihe anlegen (prüft Verfügbarkeit, `409` falls keine)
 - `POST /api/ausleihen/{id}/rueckgabe` — offene Ausleihe zurückgeben
 
+### Leihfristen, Überfälligkeit, Reservierungen (Teil 3 & 4)
+
+- `GET /api/leihfristen` / `PUT /api/leihfristen/{kategorie}` (Pfadsegment `default` für die Fallback-Frist) — Fristenkonfiguration
+- `GET /api/ausleihen?ueberfaellig=true` — überfällige offene Ausleihen
+- `GET /api/reservierungen?geraet_id=&person=&status=` — Reservierungen auflisten
+- `POST /api/reservierungen` `{geraet_id, reserviert_von, start_datum, end_datum}` — Reservierung anlegen (prüft Verfügbarkeit im Zeitraum, `409` falls keine)
+- `POST /api/reservierungen/{id}/stornieren` — aktive Reservierung stornieren
+- `POST /api/reservierungen/{id}/abholen` — Reservierung zur Ausleihe umwandeln
+
+### Geräteverwaltung und Auswertungen (Teil 5)
+
+- `POST /api/geraete` `{inventarnummer, bezeichnung, kategorie, menge, angeschafft_am?}` — Gerät anlegen (`409` bei doppelter Inventarnummer)
+- `PUT /api/geraete/{id}` `{bezeichnung, kategorie, menge, angeschafft_am?}` — Gerät bearbeiten (`409`, falls `menge` unter die aktuell gebundene Menge gesenkt würde)
+- `POST /api/geraete/{id}/ausmustern` — Gerät ausmustern (nicht mehr ausleihbar/reservierbar, Historie bleibt erhalten, keine Reaktivierung)
+- `GET /api/geraete?inkl_ausgemustert=true` — Geräteliste inkl. ausgemusterter Geräte (für die Verwaltungsansicht; Standard-Liste blendet sie aus)
+- `GET /api/stats/top-personen` — wer hat aktuell die meisten offenen Ausleihen
+- `GET /api/stats/top-geraete` — welche Geräte werden am häufigsten ausgeliehen (gesamt)
+- `GET /api/stats/auslastung` — Auslastung je Kategorie (niedrig/mittel/hoch, Definition siehe [ANNAHMEN.md](ANNAHMEN.md#teil-5--verwaltung-und-auswertungen))
+
 ### Tests ausführen
 
 ```bash
@@ -68,18 +87,19 @@ Siehe `.claude/CLAUDE.md` für die vollständige Zielstruktur. Aktuell vorhanden
 ```
 backend/
   app/
-    api/           FastAPI-Router (Teil 1: /api/import/*, Teil 2: /api/geraete/*, /api/ausleihen/*)
+    api/           FastAPI-Router (import/*, geraete/*, ausleihen/*, leihfristen/*, reservierungen/*, stats/*)
     core/          Settings, DB-Session
     models/        SQLAlchemy-Modelle des sauberen Schemas
     schemas/       Pydantic-Request-/Response-Modelle
-    services/      Business-Logik (Teil 2: Verfügbarkeitsberechnung)
+    services/      Business-Logik (Verfügbarkeit, Leihfristen, Reservierungen, Geräteverwaltung, Auswertungen)
     etl/           extract -> transform -> load -> report -> run
     tests/         pytest
-  alembic/         Schema-Migrationen für geraete/ausleihen/import_report
+  alembic/         Schema-Migrationen
 frontend/
   src/app/
     core/          API-Client-Services, Modelle
-    features/      geraete-liste (Übersicht + Ausleihe), historie (Historie + Rückgabe)
+    features/      geraete-liste, historie, ueberfaellig, reservierungen, import-report,
+                    geraete-verwaltung (Teil 5), auswertungen (Teil 5)
 data/
   altdaten_seed.sql   Rohdaten (unverändert, wird per Docker-Init geladen)
 ANNAHMEN.md           Dokumentierte Annahmen/Geschäftsregeln je Teil

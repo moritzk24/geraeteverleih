@@ -6,6 +6,7 @@ from app.api.geraete_router import router as geraete_router
 from app.api.import_router import router as import_router
 from app.api.leihfristen_router import router as leihfristen_router
 from app.api.reservierungen_router import router as reservierungen_router
+from app.api.stats_router import router as stats_router
 
 app = FastAPI(title="Geräteverleih API")
 
@@ -21,6 +22,7 @@ app.include_router(geraete_router)
 app.include_router(ausleihen_router)
 app.include_router(leihfristen_router)
 app.include_router(reservierungen_router)
+app.include_router(stats_router)
 
 
 @app.get("/health")

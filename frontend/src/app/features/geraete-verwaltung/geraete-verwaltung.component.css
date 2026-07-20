@@ -1,0 +1,10 @@
+tr.ausgemustert {
+  opacity: 0.6;
+}
+
+.badge {
+  background: #eee;
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.85em;
+}

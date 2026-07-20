@@ -16,6 +16,7 @@ class Geraet(Base):
     kategorie: Mapped[str] = mapped_column(String, nullable=False)
     menge: Mapped[int] = mapped_column(Integer, nullable=False)
     angeschafft_am: Mapped[date | None] = mapped_column(Date, nullable=True)
+    ausgemustert_am: Mapped[date | None] = mapped_column(Date, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
 
     ausleihen: Mapped[list["Ausleihe"]] = relationship(back_populates="geraet")

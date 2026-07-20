@@ -68,6 +68,8 @@ def create_ausleihe(payload: AusleiheCreate, db: Session = Depends(get_db)) -> A
     geraet = db.get(Geraet, payload.geraet_id)
     if geraet is None:
         raise HTTPException(status_code=404, detail="Gerät nicht gefunden")
+    if geraet.ausgemustert_am is not None:
+        raise HTTPException(status_code=409, detail="Gerät ist ausgemustert")
 
     verfuegbar = verfuegbare_menge(db, geraet)
     if verfuegbar <= 0:

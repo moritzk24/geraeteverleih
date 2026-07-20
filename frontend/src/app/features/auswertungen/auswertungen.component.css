@@ -1,0 +1,29 @@
+h3 {
+  margin-top: 2rem;
+}
+
+.auslastung-badge {
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.auslastung-badge.niedrig {
+  background: #d7f5db;
+  color: #1a7431;
+}
+
+.auslastung-badge.mittel {
+  background: #fdf1c7;
+  color: #8a6100;
+}
+
+.auslastung-badge.hoch {
+  background: #fbdada;
+  color: #b00020;
+}
+
+.auslastung-badge.na {
+  background: #eee;
+  color: #666;
+}

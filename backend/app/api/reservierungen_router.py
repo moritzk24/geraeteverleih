@@ -54,6 +54,8 @@ def create_reservierung(payload: ReservierungCreate, db: Session = Depends(get_d
     geraet = db.get(Geraet, payload.geraet_id)
     if geraet is None:
         raise HTTPException(status_code=404, detail="Gerät nicht gefunden")
+    if geraet.ausgemustert_am is not None:
+        raise HTTPException(status_code=409, detail="Gerät ist ausgemustert")
 
     verfuegbar = verfuegbare_menge_im_zeitraum(db, geraet, payload.start_datum, payload.end_datum)
     if verfuegbar <= 0:

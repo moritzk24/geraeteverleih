@@ -1,0 +1,78 @@
+<h2>Auswertungen</h2>
+
+<h3>Wer hat aktuell die meisten Geräte?</h3>
+<table class="summary">
+  <thead>
+    <tr>
+      <th>Person</th>
+      <th>Offene Ausleihen</th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (p of topPersonen(); track p.person) {
+      <tr>
+        <td>{{ p.person }}</td>
+        <td>{{ p.anzahl_offene_ausleihen }}</td>
+      </tr>
+    } @empty {
+      <tr>
+        <td colspan="2">Keine Daten.</td>
+      </tr>
+    }
+  </tbody>
+</table>
+
+<h3>Welche Geräte werden am häufigsten ausgeliehen?</h3>
+<table class="summary">
+  <thead>
+    <tr>
+      <th>Gerät</th>
+      <th>Ausleihen gesamt</th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (g of topGeraete(); track g.geraet_id) {
+      <tr>
+        <td>{{ g.bezeichnung }} ({{ g.inventarnummer }})</td>
+        <td>{{ g.anzahl_ausleihen }}</td>
+      </tr>
+    } @empty {
+      <tr>
+        <td colspan="2">Keine Daten.</td>
+      </tr>
+    }
+  </tbody>
+</table>
+
+<h3>Auslastung je Kategorie</h3>
+<table class="summary">
+  <thead>
+    <tr>
+      <th>Kategorie</th>
+      <th>Gebunden / Kapazität</th>
+      <th>Auslastung</th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (a of auslastung(); track a.kategorie) {
+      <tr>
+        <td>{{ a.kategorie }}</td>
+        <td>{{ a.gebunden }} / {{ a.kapazitaet }}</td>
+        <td>
+          <span
+            class="auslastung-badge"
+            [class.niedrig]="a.label === 'niedrig'"
+            [class.mittel]="a.label === 'mittel'"
+            [class.hoch]="a.label === 'hoch'"
+            [class.na]="a.label === 'n/a'"
+            >{{ a.label }}</span
+          >
+        </td>
+      </tr>
+    } @empty {
+      <tr>
+        <td colspan="3">Keine Daten.</td>
+      </tr>
+    }
+  </tbody>
+</table>

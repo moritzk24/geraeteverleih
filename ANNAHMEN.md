@@ -149,3 +149,40 @@ Es gibt keinen Endpunkt, um Datum oder Person einer bestehenden Reservierung zu 
 ### Keine Sperre gegen gleichzeitige Anfragen (Race Condition)
 
 Die Verfügbarkeitsprüfung liest die aktuelle Kapazität (offene Ausleihen + überlappende Reservierungen) und legt danach in einem separaten Schritt die neue Reservierung an, ohne Datenbank-seitige Sperre dazwischen. Zwei nahezu zeitgleiche Anfragen für die letzte freie Einheit eines Geräts könnten daher beide die Prüfung bestehen und das Gerät kurzzeitig überbuchen. Bei den zu erwartenden Nutzungszahlen (kleines Team, keine hochfrequenten parallelen Buchungen) ist das Risiko gering; für den Praxisumfang nicht behoben (würde `SELECT ... FOR UPDATE` oder eine DB-Constraint auf Belegungs-Ebene erfordern), aber bewusst dokumentiert statt stillschweigend in Kauf genommen.
+
+## Teil 5 – Verwaltung und Auswertungen
+
+### Ausmusterung: nullable Spalte statt eigener Tabelle
+
+`geraete.ausgemustert_am` (Date, nullable) statt einer separaten Tabelle — konsistent mit der bereits etablierten Konvention „Status statt Enum/Extra-Tabelle" (s. `ausleihen.zurueckgegeben_am`, `reservierungen.storniert_am`). Kein Reaktivierungs-Endpoint, da von der Aufgabenstellung nicht gefordert; Ausmustern ist damit endgültig (nur per direktem DB-Eingriff rückgängig zu machen).
+
+Ausgemusterte Geräte werden per Default aus `GET /api/geraete` ausgeblendet (Query-Param `inkl_ausgemustert=true` zeigt sie zusätzlich, genutzt von der Verwaltungsansicht); ihre Historie (`GET /api/geraete/{id}/ausleihen`) bleibt unverändert abrufbar. Neue Ausleihen und Reservierungen für ausgemusterte Geräte werden mit `409` abgelehnt — unabhängig von rechnerischer Verfügbarkeit. Bestehende offene Ausleihen/Reservierungen eines ausgemusterten Geräts bleiben unangetastet; Ausmustern erzwingt keine vorherige Rückgabe.
+
+### Geräteverwaltung: `menge`-Reduktion gegen gebundene Kapazität geprüft
+
+Beim Bearbeiten eines Geräts (`PUT /api/geraete/{id}`) wird eine Verringerung von `menge` gegen die aktuell gebundene Menge geprüft (offene Ausleihen + alle aktiven Reservierungen, unabhängig vom Zeitraum — dieselbe konservative Behandlung offener Ausleihen wie in Teil 4). Eine Reduktion unter diesen Wert wird mit `409` abgelehnt, um nicht denselben "negative Verfügbarkeit"-Zustand wie bei `IT-009` (s. Teil 2) neu zu erzeugen. `inventarnummer` ist nach Anlage nicht mehr änderbar (fachlicher Schlüssel, von Ausleihen/Reservierungen referenziert).
+
+### Definition „Auslastung je Kategorie"
+
+```
+kapazitaet(kategorie) = SUM(menge) über nicht-ausgemusterte Geräte der Kategorie
+gebunden(kategorie)   = offene Ausleihen (beliebiger Zeitpunkt, wie in Teil 2/4)
+                       + aktive Reservierungen, deren [start_datum, end_datum] den heutigen Tag überlappen
+                       — jeweils nur für nicht-ausgemusterte Geräte
+quote = gebunden / kapazitaet
+label: quote < 40%           -> "niedrig"
+       40% <= quote <= 80%   -> "mittel"
+       quote > 80%           -> "hoch"
+       kapazitaet == 0       -> "n/a" (Division durch 0 vermieden; z. B. Kategorie, deren einzige Geräte ausgemustert sind)
+```
+
+Zwei bewusste Entscheidungen, dokumentiert nach Rückfrage im Gespräch:
+
+1. **Reservierungen zählen nur, wenn ihr Zeitraum den heutigen Tag überlappt**, nicht alle aktiven Reservierungen unabhängig vom Datum. Eine Reservierung für einen Termin in mehreren Monaten soll die *aktuelle* Auslastung nicht künstlich hochtreiben — „Auslastung" ist als Momentaufnahme des gerade gebundenen Bestands definiert, nicht als Vorschau auf künftige Bindung.
+2. **Grenzwerte 40 %/80 % sind auf der „mittel"-Seite geschlossen** (`>= 40 %` und `<= 80 %` zählen als „mittel"), da die Vorgabe an den exakten Grenzwerten selbst offen war.
+
+Ausgemusterte Geräte fließen weder in `kapazitaet` noch in `gebunden` ein (gleiche Grundgesamtheit in Zähler und Nenner) — eine offene Ausleihe eines zwischenzeitlich ausgemusterten Geräts würde sonst eine Kategorie künstlich über 100 % Auslastung heben, ohne dass die verbleibenden (nicht ausgemusterten) Geräte tatsächlich stärker gebunden sind.
+
+### Auswertungen: nur die drei in der Aufgabenstellung genannten Beispiele
+
+`GET /api/stats/top-personen` (meiste aktuell offene Ausleihen), `GET /api/stats/top-geraete` (häufigste Ausleihen, alle Zeit) und `GET /api/stats/auslastung`. Keine zusätzlichen Kennzahlen gebaut — Zeitbudget, „kleine Ansicht" laut Aufgabenstellung. Die „wer hat die meisten Geräte"-Auswertung erbt die bekannte Einschränkung aus Teil 2 (`ausgeliehen_von` ist Freitext, keine Identitätsauflösung).

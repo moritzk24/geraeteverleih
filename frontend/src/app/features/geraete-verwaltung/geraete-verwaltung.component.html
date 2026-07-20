@@ -1,0 +1,125 @@
+<h2>Geräteverwaltung</h2>
+
+<div class="filter-leiste">
+  <button (click)="anlegenStarten()">Neues Gerät</button>
+</div>
+
+@if (ausmusternFehler(); as f) {
+  <p class="fehler">{{ f }}</p>
+}
+
+<table>
+  <thead>
+    <tr>
+      <th>Inventarnummer</th>
+      <th>Bezeichnung</th>
+      <th>Kategorie</th>
+      <th>Menge (verfügbar / gesamt)</th>
+      <th>Angeschafft am</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (g of geraete(); track g.id) {
+      <tr [class.ausgemustert]="g.ausgemustert">
+        <td>{{ g.inventarnummer }}</td>
+        <td>{{ g.bezeichnung }}</td>
+        <td>{{ g.kategorie }}</td>
+        <td>{{ g.verfuegbare_menge }} / {{ g.menge }}</td>
+        <td>{{ g.angeschafft_am ?? '—' }}</td>
+        <td>
+          @if (g.ausgemustert) {
+            <span class="badge">Ausgemustert seit {{ g.ausgemustert_am }}</span>
+          } @else {
+            Aktiv
+          }
+        </td>
+        <td>
+          <button (click)="bearbeitenStarten(g)">Bearbeiten</button>
+          <button [disabled]="g.ausgemustert" (click)="ausmustern(g)">Ausmustern</button>
+        </td>
+      </tr>
+    } @empty {
+      <tr>
+        <td colspan="7">Keine Geräte gefunden.</td>
+      </tr>
+    }
+  </tbody>
+</table>
+
+@if (anlegenOffen()) {
+  <div class="dialog-hintergrund">
+    <div class="dialog">
+      <h3>Neues Gerät</h3>
+      <label>
+        Inventarnummer
+        <input type="text" [(ngModel)]="form.inventarnummer" />
+      </label>
+      <label>
+        Bezeichnung
+        <input type="text" [(ngModel)]="form.bezeichnung" />
+      </label>
+      <label>
+        Kategorie
+        <input type="text" [(ngModel)]="form.kategorie" />
+      </label>
+      <label>
+        Menge
+        <input type="number" min="0" [(ngModel)]="form.menge" />
+      </label>
+      <label>
+        Angeschafft am
+        <input type="date" [(ngModel)]="form.angeschafft_am" />
+      </label>
+      @if (anlegenFehler(); as f) {
+        <p class="fehler">{{ f }}</p>
+      }
+      <div class="dialog-aktionen">
+        <button (click)="anlegenAbbrechen()">Abbrechen</button>
+        <button
+          [disabled]="!form.inventarnummer.trim() || !form.bezeichnung.trim() || !form.kategorie.trim()"
+          (click)="anlegenBestaetigen()"
+        >
+          Anlegen
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (bearbeitenGeraet(); as geraet) {
+  <div class="dialog-hintergrund">
+    <div class="dialog">
+      <h3>{{ geraet.inventarnummer }} bearbeiten</h3>
+      <label>
+        Bezeichnung
+        <input type="text" [(ngModel)]="bearbeitenForm.bezeichnung" />
+      </label>
+      <label>
+        Kategorie
+        <input type="text" [(ngModel)]="bearbeitenForm.kategorie" />
+      </label>
+      <label>
+        Menge
+        <input type="number" min="0" [(ngModel)]="bearbeitenForm.menge" />
+      </label>
+      <label>
+        Angeschafft am
+        <input type="date" [(ngModel)]="bearbeitenForm.angeschafft_am" />
+      </label>
+      @if (bearbeitenFehler(); as f) {
+        <p class="fehler">{{ f }}</p>
+      }
+      <div class="dialog-aktionen">
+        <button (click)="bearbeitenAbbrechen()">Abbrechen</button>
+        <button
+          [disabled]="!bearbeitenForm.bezeichnung.trim() || !bearbeitenForm.kategorie.trim()"
+          (click)="bearbeitenBestaetigen()"
+        >
+          Speichern
+        </button>
+      </div>
+    </div>
+  </div>
+}
