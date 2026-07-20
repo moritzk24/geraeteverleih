@@ -40,6 +40,7 @@
         <td>{{ g.verfuegbare_menge }} / {{ g.menge }}</td>
         <td>
           <button [disabled]="!g.verfuegbar" (click)="ausleiheStarten(g)">Ausleihen</button>
+          <button (click)="reservierenStarten(g)">Reservieren</button>
         </td>
       </tr>
     } @empty {
@@ -70,6 +71,40 @@
         <div class="dialog-aktionen">
           <button (click)="ausleiheAbbrechen()">Abbrechen</button>
           <button [disabled]="!ausgeliehenVon.trim()" (click)="ausleiheBestaetigen()">Bestätigen</button>
+        </div>
+      }
+    </div>
+  </div>
+}
+
+@if (reservierungGeraet(); as geraet) {
+  <div class="dialog-hintergrund">
+    <div class="dialog">
+      <h3>{{ geraet.bezeichnung }} reservieren</h3>
+      @if (reservierungErfolg(); as reservierung) {
+        <p class="erfolg">Reserviert vom {{ reservierung.start_datum }} bis {{ reservierung.end_datum }}.</p>
+        <div class="dialog-aktionen">
+          <button (click)="reservierenAbbrechen()">Schließen</button>
+        </div>
+      } @else {
+        <label>
+          Name
+          <input type="text" [(ngModel)]="reservierenVon" placeholder="Reserviert von" />
+        </label>
+        <label>
+          Von
+          <input type="date" [(ngModel)]="reservierenStart" />
+        </label>
+        <label>
+          Bis
+          <input type="date" [(ngModel)]="reservierenEnde" />
+        </label>
+        @if (reservierungFehler(); as f) {
+          <p class="fehler">{{ f }}</p>
+        }
+        <div class="dialog-aktionen">
+          <button (click)="reservierenAbbrechen()">Abbrechen</button>
+          <button [disabled]="!reservierenVon.trim()" (click)="reservierenBestaetigen()">Bestätigen</button>
         </div>
       }
     </div>

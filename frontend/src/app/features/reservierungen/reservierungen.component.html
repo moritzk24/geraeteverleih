@@ -1,0 +1,57 @@
+<h2>Reservierungen</h2>
+
+<div class="filter-leiste">
+  <select [(ngModel)]="geraetId" (ngModelChange)="suchen()">
+    <option [ngValue]="null">Alle Geräte</option>
+    @for (g of geraete(); track g.id) {
+      <option [ngValue]="g.id">{{ g.bezeichnung }} ({{ g.inventarnummer }})</option>
+    }
+  </select>
+
+  <input type="text" placeholder="Person" [(ngModel)]="person" (ngModelChange)="suchen()" />
+
+  <select [(ngModel)]="status" (ngModelChange)="suchen()">
+    <option value="aktiv">nur aktive</option>
+    <option value="storniert">storniert</option>
+    <option value="abgeholt">abgeholt</option>
+    <option value="">alle</option>
+  </select>
+</div>
+
+@if (fehler(); as f) {
+  <p class="fehler">{{ f }}</p>
+}
+
+<table>
+  <thead>
+    <tr>
+      <th>Gerät</th>
+      <th>Person</th>
+      <th>Von</th>
+      <th>Bis</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (r of reservierungen(); track r.id) {
+      <tr>
+        <td>{{ r.bezeichnung }} ({{ r.inventarnummer }})</td>
+        <td>{{ r.reserviert_von }}</td>
+        <td>{{ r.start_datum }}</td>
+        <td>{{ r.end_datum }}</td>
+        <td>{{ r.status }}</td>
+        <td>
+          @if (r.status === 'aktiv') {
+            <button (click)="abholen(r)">Abholen</button>
+            <button (click)="stornieren(r)">Stornieren</button>
+          }
+        </td>
+      </tr>
+    } @empty {
+      <tr>
+        <td colspan="6">Keine Reservierungen gefunden.</td>
+      </tr>
+    }
+  </tbody>
+</table>

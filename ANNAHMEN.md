@@ -99,3 +99,39 @@ Nur offene Ausleihen können überfällig sein. Eine verspätet zurückgegebene 
 ### Keine Admin-UI für Leihfristen
 
 Die Fristen sind über die API konfigurierbar (`GET`/`PUT /api/leihfristen`), aber es gibt in Teil 3 noch keine eigene Oberfläche zum Bearbeiten — Zeitbudget. Nur Backend-Tabelle + API; eine UI dafür wäre ein sinnvoller Ausbau in Teil 5 (Geräteverwaltung), falls Zeit bleibt.
+
+## Teil 4 – Reservierungen
+
+### Status statt Enum
+
+`reservierungen` folgt derselben Konvention wie `ausleihen` (nullable Spalten statt Status-Enum): `storniert_am IS NULL AND ausleihe_id IS NULL` = aktiv. `storniert_am` gesetzt = storniert. `ausleihe_id` gesetzt = abgeholt (Verweis auf die daraus entstandene Ausleihe).
+
+### Verfügbarkeitsprüfung im Zeitraum
+
+```
+verfuegbare_menge_im_zeitraum(geraet, start, end) =
+    geraet.menge
+    − Anzahl offener Ausleihen (zurueckgegeben_am IS NULL)
+    − Anzahl aktiver Reservierungen, die mit [start, end] überlappen
+```
+
+Zwei bewusste, konservative Entscheidungen, dokumentiert nach Rückfrage im Gespräch:
+
+1. **Offene Ausleihen blockieren jede künftige Reservierung, unabhängig von `faellig_am` und unabhängig davon, wie weit die Reservierung in der Zukunft liegt.** Pünktliche und überfällige offene Ausleihen werden gleich behandelt. Begründung: Das Rückgabedatum ist unbekannt, solange nicht tatsächlich zurückgegeben wurde; „bis `faellig_am` frei rechnen" wäre bei einem Einzelstück-Gerät ein Versprechen, das das System nicht einhalten kann, insbesondere da die Altdaten bereits zeigen, dass Verfügbarkeit im Altsystem nicht durchgesetzt wurde (s. Teil 2, `IT-009`). Konsequenz, die bewusst in Kauf genommen wird: Ist ein Einzelstück-Gerät gerade verliehen (erst recht überfällig), kann es **für keinen** künftigen Zeitraum reserviert werden, bis es tatsächlich als zurückgegeben erfasst ist — auch nicht für einen Termin Monate später. Eine feinere Regel (z. B. Puffer nach `faellig_am` für noch-nicht-überfällige Ausleihen) wäre möglich, aber ohne echte Nutzungsdaten reine Spekulation über die richtige Puffergröße; daher nicht gebaut.
+2. **Sich berührende Intervalle gelten als Überlappung** (`end_datum` einer Reservierung == `start_datum` einer anderen ⇒ blockiert). Ohne Uhrzeiterfassung wird der gemeinsame Tag konservativ als beiden zugehörig behandelt, um keine Doppelbuchung am Übergabetag zu riskieren.
+
+### Reservierungszeitraum ist von der Leihfrist entkoppelt
+
+Das Zeitfenster `[start_datum, end_datum]` einer Reservierung sagt nur, wie lange das Gerät für die Abholung zurückgehalten wird — es ist **keine** Vorwegnahme der Leihdauer. Bei Abholung wird `faellig_am` genauso berechnet wie bei einer regulären Ausleihe: `ausgeliehen_am = heute` (Abholdatum), `faellig_am = heute + aktuelle Leihfrist der Kategorie`. Eine 15-tägige Reservierung bei 14-tägiger Leihfrist ist damit kein Widerspruch — sie sagt nichts über die spätere Leihdauer aus. Eine Kopplung (z. B. `end_datum` auf `start_datum + Leihfrist` deckeln) wäre möglich, wurde aber bewusst nicht gebaut, um „wie lange im Voraus reservierbar" nicht mit „wie lange darf ausgeliehen werden" zu vermengen.
+
+### Abholung: kein Zeitfenster-Zwang, keine erneute Verfügbarkeitsprüfung
+
+Abholung ist für jede aktive Reservierung jederzeit möglich, auch außerhalb von `[start_datum, end_datum]` (z. B. verspätete Abholung nach Ablauf) — es gibt keine Sperre dafür, das wäre reine Zusatzkomplexität ohne klaren Nutzen im gegebenen Zeitbudget. Bei Abholung wird die Kapazität nicht erneut geprüft: Sie war der Reservierung bereits zugeteilt; die Reservierung wird inaktiv (durch Setzen von `ausleihe_id`) und die neu entstehende offene Ausleihe belegt stattdessen Kapazität — macht keinen Unterschied für die Gesamtbilanz.
+
+### Person bei Abholung
+
+`ausgeliehen_von` der entstehenden Ausleihe wird aus `reservierung.reserviert_von` übernommen, ohne Möglichkeit, bei der Abholung eine abweichende Person einzutragen. Für den Praxisumfang ausreichend; wie bei Ausleihen ist „Person" ohnehin nur Freitext ohne Identitätsprüfung (s. Teil 2).
+
+### Reservierung muss in der Zukunft liegen
+
+`start_datum >= heute` (heute selbst ist zulässig) und `end_datum >= start_datum`, sonst 422. Es gibt keine Admin-Möglichkeit, rückwirkend zu reservieren.
